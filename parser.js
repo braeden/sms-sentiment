@@ -1,4 +1,10 @@
+require('@tensorflow/tfjs-node');
+const toxicity = require('@tensorflow-models/toxicity');
 const parser = require('fast-xml-parser');
+const language = require('@google-cloud/language');
+const client = new language.LanguageServiceClient();
+
+
 
 module.exports = {
     parseXML: async function parseXML(f) {
@@ -42,10 +48,51 @@ module.exports = {
                 }
                 senderArr.push(messageData)
             });
-            //console.log(jsonObj.smses.sms);
-
-            // console.log(jsonArr);
             return jsonArr;
         }
+    },
+    addSentimentGCP: async (parsedXML) => {
+        const sentencesArray = getSentencesArray(parsedXML)
+        const combinedSentences = sentencesArray.join(". ")
+
+        const [result] = await client.analyzeSentiment({
+            document: {
+                content: combinedSentences,
+                type: 'PLAIN_TEXT'
+            }
+        });
+        const sentiments = result.sentences.map((senteces) => {
+            return senteces.sentiment.score;
+        })
+        pushSentiments(parsedXML, sentiments)
+    },
+    addSentimentTFJS: async (parsedXML) => {
+        const sentencesArray = getSentencesArray(parsedXML)
+        const model = await toxicity.load(0.9, ['toxicity']);
+        const [predictions] = await model.classify(sentencesArray)
+        const sentiments = predictions.results.map((e) => {
+            return e.probabilities[1]
+        })
+        pushSentiments(parsedXML, sentiments)
     }
+}
+
+const getSentencesArray = (parsedXML) => {
+    const sentencesArray = []
+    parsedXML.forEach((userEntry) => {
+        userEntry.forEach((textObject) => {
+            sentencesArray.push(textObject.body)
+        })
+    })
+    return sentencesArray;
+}
+
+const pushSentiments = (parsedXML, sentiments) => {
+    let i = 0;
+    parsedXML.forEach((userEntry) => {
+        userEntry.forEach((textObject) => {
+            textObject["score"] = sentiments[i]
+            i++;
+        })
+    })
 }
