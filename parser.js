@@ -1,6 +1,10 @@
+require('@tensorflow/tfjs-node');
+const toxicity = require('@tensorflow-models/toxicity');
 const parser = require('fast-xml-parser');
 const language = require('@google-cloud/language');
 const client = new language.LanguageServiceClient();
+
+
 
 module.exports = {
     parseXML: async function parseXML(f) {
@@ -47,13 +51,8 @@ module.exports = {
             return jsonArr;
         }
     },
-    addSentiment: async function sentimentAnalysis(parsedXML) {
-        const sentencesArray = []
-        parsedXML.forEach((userEntry) => {
-            userEntry.forEach((textObject) => {
-                sentencesArray.push(textObject.body)
-            })
-        })
+    addSentimentGCP: async (parsedXML) => {
+        const sentencesArray = getSentencesArray(parsedXML)
         const combinedSentences = sentencesArray.join(". ")
 
         const [result] = await client.analyzeSentiment({
@@ -62,15 +61,38 @@ module.exports = {
                 type: 'PLAIN_TEXT'
             }
         });
-        const sentiments = result.sentences.map((result) => {
-            return result.sentiment.score;
+        const sentiments = result.sentences.map((senteces) => {
+            return senteces.sentiment.score;
         })
-        let i = 0;
-        parsedXML.forEach((userEntry) => {
-            userEntry.forEach((textObject) => {
-                textObject["score"] = sentiments[i]
-                i++;
-            })
+        pushSentiments(parsedXML, sentiments)
+    },
+    addSentimentTFJS: async (parsedXML) => {
+        const sentencesArray = getSentencesArray(parsedXML)
+        const model = await toxicity.load(0.9, ['toxicity']);
+        const [predictions] = await model.classify(sentencesArray)
+        const sentiments = predictions.results.map((e) => {
+            return e.probabilities[1]
         })
+        pushSentiments(parsedXML, sentiments)
     }
+}
+
+const getSentencesArray = (parsedXML) => {
+    const sentencesArray = []
+    parsedXML.forEach((userEntry) => {
+        userEntry.forEach((textObject) => {
+            sentencesArray.push(textObject.body)
+        })
+    })
+    return sentencesArray;
+}
+
+const pushSentiments = (parsedXML, sentiments) => {
+    let i = 0;
+    parsedXML.forEach((userEntry) => {
+        userEntry.forEach((textObject) => {
+            textObject["score"] = sentiments[i]
+            i++;
+        })
+    })
 }

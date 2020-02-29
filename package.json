@@ -18,8 +18,11 @@
   "homepage": "https://github.com/braeden/sms-sentiment#readme",
   "dependencies": {
     "@google-cloud/language": "^3.7.2",
+    "@tensorflow-models/toxicity": "^1.2.2",
+    "@tensorflow/tfjs-node": "^1.5.2",
     "express": "^4.17.1",
     "express-fileupload": "^1.1.6",
-    "fast-xml-parser": "^3.16.0"
+    "fast-xml-parser": "^3.16.0",
+    "node-fetch": "^2.6.0"
   }
 }

@@ -5,6 +5,10 @@ const port = process.env.PORT || 3000
 app.use(express.static('public'))
 const fileUpload = require('express-fileupload');
 app.use(fileUpload());
+const tf = require("@tensorflow/tfjs");
+const fetch = require("node-fetch");
+
+
 
 app.post('/upload', async (req, res) => {
     if (!req.files || !req.files.xmlupload || Object.keys(req.files).length === 0) {
@@ -19,12 +23,26 @@ app.post('/upload', async (req, res) => {
     console.log(f.mimetype, f.size)
     parsedXML = await xmlParser.parseXML(f.data.toString())
     console.log(parsedXML)
-    await xmlParser.addSentiment(parsedXML);
+    if (req.body.useTFJS) {
+        await xmlParser.addSentimentTFJS(parsedXML)
+    } else {
+        await xmlParser.addSentimentGCP(parsedXML)
+    }
     console.log(parsedXML)
     res.json(parsedXML)
 })
 
+const getMetaData = async () => {
+    //https://www.twilio.com/blog/how-positive-was-your-year-with-tensorflow-js-and-twilio
+    const metadata = await fetch("https://storage.googleapis.com/tfjs-models/tfjs/sentiment_cnn_v1/metadata.json")
+    return metadata.json()
+}
 
+const loadModel = async () => {
+    const url = `https://storage.googleapis.com/tfjs-models/tfjs/sentiment_cnn_v1/model.json`;
+    const model = await tf.loadLayersModel(url);
+    return model;
+};
 
 app.get('/test', async (req, res) => {
     const parsedXML = [
