@@ -1,11 +1,135 @@
 <html>
 
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+    <style>
+        canvas {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+    </style>
+</head>
+
 <body>
-    <form ref='uploadForm' id='uploadForm' action='/test' method='post'
-        encType="multipart/form-data">
+    <form ref='uploadForm' id='uploadForm' action='/test' method='post' encType="multipart/form-data">
         <input type="file" name="xmlupload" />
         <input type='submit' value='Upload!' />
     </form>
+    <div style="width:75%;">
+        <canvas id="canvas"></canvas>
+    </div>
+    <br>
+    <br>
+    <button id="loadGraph" onclick="lineGraph({});">Load Graph</button>
+    <script>
+        function lineGraph(jsonData) {
+            var config = {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                          
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    title: {
+                        display: true,
+                        text: 'Chart.js Line Chart'
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    hover: {
+                        mode: 'nearest',
+                        intersect: true
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Month'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Value'
+                            }
+                        }
+                    }
+                }
+            }
+            
+            jsonData = [[{ body: "hello", date: "1", sentiment: ".8" },{ body: "hello", date: "3", sentiment: "-.3" }], [{ body: "bye", date: "1", sentiment: ".3" }, { body: "bye bye", date: "2", sentiment: ".3" }, { body: "hello", date: "3", sentiment: ".7" }]]
+            
+            const colorList = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#000000'];
+
+            let dateArr = []
+            jsonData.forEach(userData => {
+                userData.forEach(message => {
+                    const curDate = parseInt(message.date.trim());
+                    
+                    if(!(dateArr.includes(curDate))){
+                        dateArr.push(curDate)
+                    }
+                });
+            })
+            dateArr.sort();
+            
+            dateArr.forEach(date => {
+                config.data.labels.push(date.toString())
+            })
+
+            let userCount = 0;
+            jsonData.forEach(userData => {
+                let sentimentDateMap = {};
+                userData.forEach(message =>{
+                    const curDate = message.date;
+                    const curSentiment = message.sentiment;
+            
+                    if(curDate in sentimentDateMap){
+                        const oldMap = sentimentDateMap[curDate]
+                        sentimentDateMap[curDate] = {sentimentSum: parseFloat(curSentiment)+oldMap.sentimentSum, count: 1 + oldMap.count};
+                    }else{
+                        sentimentDateMap[curDate] = {sentimentSum : parseFloat(curSentiment), count : 1 };
+                    }
+                    
+                });
+                let newSentiment = {
+                    label: "User ".concat(userCount.toString()),
+                    backgroundColor: colorList[userCount],
+                    borderColor: colorList[userCount],
+                    data: [],
+                    fill: false,
+                    spanGaps: true
+                }
+                const dates = Object.keys(sentimentDateMap);
+                let curDateIndex = 0;
+                let curDate = dateArr[curDateIndex];
+                dates.forEach(date => {
+                    while(dateArr[curDateIndex] < date){
+                        //const sentimentAverage = sentimentDateMap[date].sentimentSum/sentimentDateMap[date].count;
+                        newSentiment.data.push(null);
+                        curDateIndex += 1
+                    }
+                    const sentimentAverage = sentimentDateMap[date].sentimentSum/sentimentDateMap[date].count;
+                    newSentiment.data.push(sentimentAverage);
+                    curDateIndex += 1
+                });
+                config.data.datasets.push(newSentiment);
+                userCount += 1
+            });
+            
+        var ctx = document.getElementById('canvas').getContext('2d');
+        window.myLine = new Chart(ctx, config);
+        
+    }
+    </script>
 </body>
 
 </html>
