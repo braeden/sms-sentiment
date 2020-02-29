@@ -5,93 +5,83 @@ const port = process.env.PORT || 3000
 app.use(express.static('public'))
 const fileUpload = require('express-fileupload');
 app.use(fileUpload());
-const language = require('@google-cloud/language');
-const client = new language.LanguageServiceClient();
+const tf = require("@tensorflow/tfjs");
+const fetch = require("node-fetch");
 
 
 
-// const text = 'I hate you tyler! I love you tyler.';
-
-// const document = {
-//     content: text,
-//     type: 'PLAIN_TEXT',
-// };
-app.post('/test', async (req, res) => {
+app.post('/upload', async (req, res) => {
+    // console.log(req)
     if (!req.files || !req.files.xmlupload || Object.keys(req.files).length === 0) {
         return res.status(400).send('No files were uploaded.');
     } else if (!req.files.xmlupload.mimetype.includes("xml")) {
         return res.status(400).send('Incorrect filetype')
+    } else if (req.files.xmlupload.size > 100000) {
+        return res.status(400).send('File too large')
     }
+
     const f = req.files.xmlupload
+    console.log("checkbox", req.body.useTFJS)
     console.log(f.mimetype, f.size)
-    console.log(await xmlParser.parseXML(f.data.toString()))
-    // parser.parse(f.data)
-    res.send('yeet')
+    parsedXML = await xmlParser.parseXML(f.data.toString())
+    // console.log(parsedXML)
+    if (req.body.useTFJS == 'true') {
+        console.log("runnning tfjs")
+
+        await xmlParser.addSentimentTFJS(parsedXML)
+    } else {
+        console.log("runnning gcp")
+        await xmlParser.addSentimentGCP(parsedXML)
+    }
+    // console.log(parsedXML)
+    res.json(parsedXML)
 })
 
-async function sentimentAnalysis(parsedXML) {
+// const getMetaData = async () => {
+//     //https://www.twilio.com/blog/how-positive-was-your-year-with-tensorflow-js-and-twilio
+//     const metadata = await fetch("https://storage.googleapis.com/tfjs-models/tfjs/sentiment_cnn_v1/metadata.json")
+//     return metadata.json()
+// }
 
+// const loadModel = async () => {
+//     const url = `https://storage.googleapis.com/tfjs-models/tfjs/sentiment_cnn_v1/model.json`;
+//     const model = await tf.loadLayersModel(url);
+//     return model;
+// };
 
-    const sentencesArray = []
-    parsedXML.forEach((userEntry) => {
-        userEntry.forEach((textObject) => {
-            sentencesArray.push(textObject.body)
-        })
-    })
-    const combinedSentences = sentencesArray.join(". ")
+// app.get('/test', async (req, res) => {
+//     const parsedXML = [
+//         [{
+//                 "body": "text 1",
+//                 "date": "asdasdasasdsa"
+//             },
+//             {
+//                 "body": "text number two",
+//                 "date": "asdasdasasdsa"
+//             },
+//             {
+//                 "body": "I hate you",
+//                 "date": "asdasdasasdsa"
+//             }
+//         ],
+//         [{
+//                 "body": "i like you and i want to go home",
+//                 "date": "asdasdasasdsa"
+//             },
+//             {
+//                 "body": "yeet is a nice word plus ect",
+//                 "date": "asdasdasasdsa"
+//             },
+//             {
+//                 "body": "hello this is a test",
+//                 "date": "asdasdasasdsa"
+//             }
+//         ]
+//     ]
 
-    const [result] = await client.analyzeSentiment({
-        document: {
-            content: combinedSentences,
-            type: 'PLAIN_TEXT'
-        }
-    });
-    const sentiments = result.sentences.map((result) => {
-        return result.sentiment.score;
-    })
-    let i = 0;
-    parsedXML.forEach((userEntry) => {
-        userEntry.forEach((textObject) => {
-            textObject["score"] = sentiments[i]
-            i++;
-        })
-    })
-}
-
-
-app.get('/upload', async (req, res) => {
-    const parsedXML = [
-        [{
-                "body": "text 1",
-                "date": "asdasdasasdsa"
-            },
-            {
-                "body": "text number two",
-                "date": "asdasdasasdsa"
-            },
-            {
-                "body": "I hate you",
-                "date": "asdasdasasdsa"
-            }
-        ],
-        [{
-                "body": "i like you and i want to go home",
-                "date": "asdasdasasdsa"
-            },
-            {
-                "body": "yeet is a nice word plus ect",
-                "date": "asdasdasasdsa"
-            },
-            {
-                "body": "hello this is a test",
-                "date": "asdasdasasdsa"
-            }
-        ]
-    ]
-
-    sentimentAnalysis(parsedXML)
-    console.log(parsedXML);
-    res.send("hello")
-});
+//     sentimentAnalysis(parsedXML)
+//     console.log(parsedXML);
+//     res.send("hello")
+// });
 
 app.listen(port, () => console.log(`Started at port ${port}`))
