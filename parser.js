@@ -1,4 +1,6 @@
 const parser = require('fast-xml-parser');
+const language = require('@google-cloud/language');
+const client = new language.LanguageServiceClient();
 
 module.exports = {
     parseXML: async function parseXML(f) {
@@ -42,10 +44,33 @@ module.exports = {
                 }
                 senderArr.push(messageData)
             });
-            //console.log(jsonObj.smses.sms);
-
-            // console.log(jsonArr);
             return jsonArr;
         }
+    },
+    addSentiment: async function sentimentAnalysis(parsedXML) {
+        const sentencesArray = []
+        parsedXML.forEach((userEntry) => {
+            userEntry.forEach((textObject) => {
+                sentencesArray.push(textObject.body)
+            })
+        })
+        const combinedSentences = sentencesArray.join(". ")
+
+        const [result] = await client.analyzeSentiment({
+            document: {
+                content: combinedSentences,
+                type: 'PLAIN_TEXT'
+            }
+        });
+        const sentiments = result.sentences.map((result) => {
+            return result.sentiment.score;
+        })
+        let i = 0;
+        parsedXML.forEach((userEntry) => {
+            userEntry.forEach((textObject) => {
+                textObject["score"] = sentiments[i]
+                i++;
+            })
+        })
     }
 }
