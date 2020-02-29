@@ -36,16 +36,16 @@ module.exports = {
                     jsonArr.push([])
                 }
                 let senderArr = jsonArr[type]
-                let messageData = {}
-                messageData["body"] = body
-                messageData["date"] = date.toString()
+                let messageData = {
+                    body: body,
+                    date: date.toString()
+                }
                 senderArr.push(messageData)
             });
             //console.log(jsonObj.smses.sms);
 
             // console.log(jsonArr);
             return jsonArr;
-
         }
     }
 }
