@@ -1,25 +1,22 @@
 <html>
 
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
-    <style>
-        canvas {
-            -moz-user-select: none;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 </head>
 
 <body>
-    <input id="fileUpload" type="file" />
-    useTFJS<input type="checkbox" id="useTFJS" checked>
-    <div style="width:75%;">
+    <input type="file" name="file" id="fileUpload" />
+    <label><input type="checkbox" name="check" id="useTFJS" checked>
+        Use TensorFlow.js
+    </label>
+    <div id="canvasWrapper">
         <canvas id="canvas"></canvas>
     </div>
-    <br>
-    <br>
     <script src="main.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
 
 </body>
 

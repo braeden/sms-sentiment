@@ -67,9 +67,8 @@ module.exports = {
             }
         });
         let sentimentsObj = {}
-        const sentiments = result.sentences.forEach((sentence) => {
+        result.sentences.forEach((sentence) => {
             // console.log("Sentence: ", sentence.text.content.replace(". ", ""))
-
             sentimentsObj[sentence.text.content.replace(".", "")] = sentence.sentiment.score;
         })
         parsedXML.forEach((userEntry) => {
@@ -81,7 +80,7 @@ module.exports = {
             })
         })
     },
-    addSentimentTFJS: async (parsedXML) => {
+    addSentimentTFJS: async (parsedXML) => {  
         const sentencesArray = getSentencesArray(parsedXML)
         //identity_attack, insult, obscene, severe_toxicity, sexual_explicit, threat, toxicity,
         const model = await toxicity.load(0.5, ['toxicity']);
@@ -107,7 +106,7 @@ const pushSentiments = (parsedXML, sentiments) => {
     let i = 0;
     parsedXML.forEach((userEntry) => {
         userEntry.forEach((textObject) => {
-            textObject["score"] = sentiments[i]
+            textObject.score = sentiments[i]
             i++;
         })
     })
