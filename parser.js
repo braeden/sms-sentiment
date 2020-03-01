@@ -8,7 +8,7 @@ const client = new language.LanguageServiceClient();
 
 module.exports = {
     parseXML: async function parseXML(f) {
-
+        console.log(typeof f.body)
         if (parser.validate(f) === true) {
             const options = {
                 attributeNamePrefix: "",
@@ -33,7 +33,7 @@ module.exports = {
             let jsonArr = [];
 
             messages.forEach(messageMeta => {
-                let body = messageMeta.body
+                let body = messageMeta.body.toString()
                 body = body.replace(/\./g, '');
 
                 let date = messageMeta.date
@@ -61,10 +61,22 @@ module.exports = {
                 type: 'PLAIN_TEXT'
             }
         });
-        const sentiments = result.sentences.map((senteces) => {
-            return senteces.sentiment.score;
+        let sentimentsObj = {}
+        const sentiments = result.sentences.forEach((sentence) => {
+            console.log("Sentence: ", sentence.text.content.replace(". ",""))
+
+            sentimentsObj[sentence.text.content.replace(".", "")] = sentence.sentiment.score;
+            // return sentence.sentiment.score;
         })
-        pushSentiments(parsedXML, sentiments)
+        parsedXML.forEach((userEntry) => {
+            userEntry.forEach((textObject) => {
+                textObject.score = sentimentsObj[textObject.body]
+                console.log("here ", textObject.score)
+                if (textObject.score == undefined) {
+                    console.log("error: " textObject.body)
+                }
+            })
+        })
     },
     addSentimentTFJS: async (parsedXML) => {
         const sentencesArray = getSentencesArray(parsedXML)
@@ -82,6 +94,8 @@ const getSentencesArray = (parsedXML) => {
     parsedXML.forEach((userEntry) => {
         userEntry.forEach((textObject) => {
             sentencesArray.push(textObject.body)
+            console.log("From parser ", textObject.body)
+
         })
     })
     return sentencesArray;

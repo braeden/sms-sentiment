@@ -16,13 +16,10 @@ app.post('/upload', async (req, res) => {
         return res.status(400).send('No files were uploaded.');
     } else if (!req.files.xmlupload.mimetype.includes("xml")) {
         return res.status(400).send('Incorrect filetype')
-    } else if (req.files.xmlupload.size > 100000) {
+    } else if (req.files.xmlupload.size > 10000000000) {
         return res.status(400).send('File too large')
     }
-
     const f = req.files.xmlupload
-    console.log("checkbox", req.body.useTFJS)
-    console.log(f.mimetype, f.size)
     parsedXML = await xmlParser.parseXML(f.data.toString())
     // console.log(parsedXML)
     if (req.body.useTFJS == 'true') {
@@ -33,7 +30,6 @@ app.post('/upload', async (req, res) => {
         console.log("runnning gcp")
         await xmlParser.addSentimentGCP(parsedXML)
     }
-    // console.log(parsedXML)
     res.json(parsedXML)
 })
 
