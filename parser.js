@@ -35,6 +35,9 @@ module.exports = {
             messages.forEach(messageMeta => {
                 let body = messageMeta.body.toString()
                 body = body.replace(/\./g, '');
+                body = body.replace(/\!/g, '');
+                body = body.replace(/\&\#.*;/g, '');
+
 
                 let date = messageMeta.date
                 let type = messageMeta.type - 1
