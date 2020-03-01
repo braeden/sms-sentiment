@@ -40,10 +40,16 @@ function lineGraph(jsonData) {
                 text: 'SMS Sentiment'
             },
             tooltips: {
-                enabled: false,
-                
+                enabled: true,
+
                 mode: 'index',
-                intersect: false,
+                intersect: true,
+                callbacks: {
+                    label: function(tooltipItems, data){
+                        var prefix = "NOT";
+                        return prefix;
+                    }
+                }
             },
             hover: {
                 mode: 'nearest',
@@ -68,37 +74,12 @@ function lineGraph(jsonData) {
         }
     }
 
-    // jsonData = [
-    //     [{
-    //         body: "hello",
-    //         date: "1",
-    //         sentiment: ".8"
-    //     }, {
-    //         body: "hello",
-    //         date: "3",
-    //         sentiment: "-.3"
-    //     }],
-    //     [{
-    //         body: "bye",
-    //         date: "1",
-    //         sentiment: ".3"
-    //     }, {
-    //         body: "bye bye",
-    //         date: "2",
-    //         sentiment: ".3"
-    //     }, {
-    //         body: "hello",
-    //         date: "3",
-    //         sentiment: ".7"
-    //     }]
-    // ]
-
     const colorList = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#000000'];
 
     let dateArr = []
     jsonData.forEach(userData => {
         userData.forEach(message => {
-            const curDate = Math.floor(parseInt(message.date.trim())/1000);
+            const curDate = Math.floor(parseInt(message.date.trim()) / 1000);
 
             if (!(dateArr.includes(curDate))) {
                 dateArr.push(curDate)
@@ -120,15 +101,16 @@ function lineGraph(jsonData) {
             const curDate = Math.floor(message.date / 1000);
             const curSentiment = message.score;
 
-            if(curDate in dateToMessageMapArr[userCount]){
+            if (curDate in dateToMessageMapArr[userCount]) {
                 const newDateString = dateToMessageMapArr[userCount][curDate].concat("...").concat(message.body);
                 dateToMessageMapArr[userCount][curDate] = newDateString;
-            }else{
+            } else {
                 dateToMessageMapArr[userCount][curDate] = message.body;
             }
 
-            if(dateToMessageMapArr[userCount][curDate].length > 100){
+            if (dateToMessageMapArr[userCount][curDate].length > 100) {
                 dateToMessageMapArr[userCount][curDate] = dateToMessageMapArr[userCount][curDate].substring(0, 100);
+                dateToMessageMapArr[userCount][curDate] = dateToMessageMapArr[userCount][curDate].concat("...");
             }
 
             if (curDate in sentimentDateMap) {
@@ -169,80 +151,17 @@ function lineGraph(jsonData) {
         config.data.datasets.push(newSentiment);
         userCount += 1
     });
-
-    config.options.tooltips.custom = function (tooltipModel) {
-
-        let tooltipEl = document.getElementById('chartjs-tooltip');
-        // Create element on first render
-        if (!tooltipEl) {
-            tooltipEl = document.createElement('div');
-            tooltipEl.id = 'chartjs-tooltip';
-            tooltipEl.innerHTML = '<table></table>';
-            document.body.appendChild(tooltipEl);
-        }
-        // Hide if no tooltip
-        // if (tooltipModel.opacity === 0) {
-        //     tooltipEl.style.opacity = 0;
-        //     return;
-        // }
-
-        // Set caret Position
-        // tooltipEl.classList.remove('above', 'below', 'no-transform');
-        // if (tooltipModel.yAlign) {
-        //     tooltipEl.classList.add(tooltipModel.yAlign);
-        // } else {
-        //     tooltipEl.classList.add('no-transform');
-        // }
-
-      //  tooltipModel.yAlign = ""
-        function getBody(bodyItem) {
-            return bodyItem.lines;
-        }
-        console.log("HERE")
-        // Set Text
-        if (tooltipModel.body) {
-            let titleLines = tooltipModel.title || [];
-            let bodyLines = [""]//tooltipModel.body.map(getBody);
-            console.log(bodyLines)
-
-            let hoveredDate = ""; 
-            if(titleLines.length != 0){
-                hoveredDate = parseInt(titleLines[0]);
-                
-                let counter = 0;
-                dateToMessageMapArr.forEach(userData =>{
-                    let userMessage = "User ".concat(counter).concat(": ");
-
-                    userMessage = userMessage.concat(userData[hoveredDate] || "N/A");
-
-                    bodyLines.push(userMessage);
-                    counter += 1
-                });
-            }
-            console.log(bodyLines)
-            let innerHtml = '<thead>';
-
-            titleLines.forEach(function (title) {
-                innerHtml += '<tr><th>' + title + '</th></tr>';
-            });
-            innerHtml += '</thead><tbody>';
-            let count = 0;
-            bodyLines.forEach(function (body) {
-                let colors = colorList[count];
-                let style = 'background:' + colors;
-                style += '; border-color:' + colors;
-                style += '; border-width: 2px';
-                let span = '<span style="' + style + '"></span>';
-                innerHtml += '<tr><td>' + span + body + '</td></tr>';
-                count += 1
-            });
-            innerHtml += '</tbody>';
-
-            let tableRoot = tooltipEl.querySelector('table');
-            tableRoot.innerHTML = innerHtml;
-        }
+    config.options.tooltips.callbacks.label = function (tooltipItems, data) {
         
-    }
+        let hoveredDate = parseInt(tooltipItems.label);
+        let yValue = tooltipItems.value.substring(0, 4)
+        let user = tooltipItems.datasetIndex
+
+        let message = yValue.concat(" --- ");
+        message = message.concat(dateToMessageMapArr[user][hoveredDate] || "N/A")       
+        return message;
+    };
+    
     let ctx = document.getElementById('canvas').getContext('2d');
     window.myLine = new Chart(ctx, config);
 
