@@ -25,7 +25,7 @@ document.getElementById('fileUpload').addEventListener('change', event => {
 
 
 function lineGraph(jsonData) {
-    var config = {
+    let config = {
         type: 'line',
         data: {
             labels: [],
@@ -40,6 +40,8 @@ function lineGraph(jsonData) {
                 text: 'SMS Sentiment'
             },
             tooltips: {
+                enabled: false,
+                
                 mode: 'index',
                 intersect: false,
             },
@@ -96,7 +98,7 @@ function lineGraph(jsonData) {
     let dateArr = []
     jsonData.forEach(userData => {
         userData.forEach(message => {
-            const curDate = parseInt(message.date.trim());
+            const curDate = Math.floor(parseInt(message.date.trim())/1000);
 
             if (!(dateArr.includes(curDate))) {
                 dateArr.push(curDate)
@@ -110,11 +112,24 @@ function lineGraph(jsonData) {
     })
 
     let userCount = 0;
+    let dateToMessageMapArr = []
     jsonData.forEach(userData => {
         let sentimentDateMap = {};
+        dateToMessageMapArr.push({});
         userData.forEach(message => {
-            const curDate = message.date;
+            const curDate = Math.floor(message.date / 1000);
             const curSentiment = message.score;
+
+            if(curDate in dateToMessageMapArr[userCount]){
+                const newDateString = dateToMessageMapArr[userCount][curDate].concat("...").concat(message.body);
+                dateToMessageMapArr[userCount][curDate] = newDateString;
+            }else{
+                dateToMessageMapArr[userCount][curDate] = message.body;
+            }
+
+            if(dateToMessageMapArr[userCount][curDate].length > 100){
+                dateToMessageMapArr[userCount][curDate] = dateToMessageMapArr[userCount][curDate].substring(0, 100);
+            }
 
             if (curDate in sentimentDateMap) {
                 const oldMap = sentimentDateMap[curDate]
@@ -155,7 +170,80 @@ function lineGraph(jsonData) {
         userCount += 1
     });
 
-    var ctx = document.getElementById('canvas').getContext('2d');
+    config.options.tooltips.custom = function (tooltipModel) {
+
+        let tooltipEl = document.getElementById('chartjs-tooltip');
+        // Create element on first render
+        if (!tooltipEl) {
+            tooltipEl = document.createElement('div');
+            tooltipEl.id = 'chartjs-tooltip';
+            tooltipEl.innerHTML = '<table></table>';
+            document.body.appendChild(tooltipEl);
+        }
+        // Hide if no tooltip
+        // if (tooltipModel.opacity === 0) {
+        //     tooltipEl.style.opacity = 0;
+        //     return;
+        // }
+
+        // Set caret Position
+        // tooltipEl.classList.remove('above', 'below', 'no-transform');
+        // if (tooltipModel.yAlign) {
+        //     tooltipEl.classList.add(tooltipModel.yAlign);
+        // } else {
+        //     tooltipEl.classList.add('no-transform');
+        // }
+
+      //  tooltipModel.yAlign = ""
+        function getBody(bodyItem) {
+            return bodyItem.lines;
+        }
+        console.log("HERE")
+        // Set Text
+        if (tooltipModel.body) {
+            let titleLines = tooltipModel.title || [];
+            let bodyLines = [""]//tooltipModel.body.map(getBody);
+            console.log(bodyLines)
+
+            let hoveredDate = ""; 
+            if(titleLines.length != 0){
+                hoveredDate = parseInt(titleLines[0]);
+                
+                let counter = 0;
+                dateToMessageMapArr.forEach(userData =>{
+                    let userMessage = "User ".concat(counter).concat(": ");
+
+                    userMessage = userMessage.concat(userData[hoveredDate] || "N/A");
+
+                    bodyLines.push(userMessage);
+                    counter += 1
+                });
+            }
+            console.log(bodyLines)
+            let innerHtml = '<thead>';
+
+            titleLines.forEach(function (title) {
+                innerHtml += '<tr><th>' + title + '</th></tr>';
+            });
+            innerHtml += '</thead><tbody>';
+            let count = 0;
+            bodyLines.forEach(function (body) {
+                let colors = colorList[count];
+                let style = 'background:' + colors;
+                style += '; border-color:' + colors;
+                style += '; border-width: 2px';
+                let span = '<span style="' + style + '"></span>';
+                innerHtml += '<tr><td>' + span + body + '</td></tr>';
+                count += 1
+            });
+            innerHtml += '</tbody>';
+
+            let tableRoot = tooltipEl.querySelector('table');
+            tableRoot.innerHTML = innerHtml;
+        }
+        
+    }
+    let ctx = document.getElementById('canvas').getContext('2d');
     window.myLine = new Chart(ctx, config);
 
 }
