@@ -16,7 +16,7 @@ app.post('/upload', async (req, res) => {
         return res.status(400).send('No files were uploaded.');
     } else if (!req.files.xmlupload.mimetype.includes("xml")) {
         return res.status(400).send('Incorrect filetype')
-    } else if (req.files.xmlupload.size > 100000) {
+    } else if (req.files.xmlupload.size > 10000000) {
         return res.status(400).send('File too large')
     }
 

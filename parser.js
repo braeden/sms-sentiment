@@ -36,7 +36,8 @@ module.exports = {
                 let body = messageMeta.body.toString()
                 body = body.replace(/\./g, '');
                 body = body.replace(/\!/g, '');
-                body = body.replace(/\&\#.*;/g, '');
+                body = body.replace(/\?/g, '');
+                body = body.replace(/\&\#.*\;/g, '');
 
 
                 let date = messageMeta.date
