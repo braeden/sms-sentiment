@@ -2,16 +2,19 @@ async function handleImageUpload(event) {
     const files = event.target.files
     const formData = new FormData()
     formData.append('xmlupload', files[0])
-    console.log(files[0])
-    console.log("checkbox", document.getElementById('useTFJS').checked)
     formData.append('useTFJS', document.getElementById('useTFJS').checked)
-    console.log(formData)
     const resp = await fetch('/upload', {
         method: 'POST',
         body: formData
     })
     let json = await resp.json()
-    lineGraph(json);
+
+    if (!json.error) {
+        lineGraph(json);
+    } else {
+        alert(json.error);
+    }
+
     console.log(json)
 }
 
@@ -34,7 +37,7 @@ function lineGraph(jsonData) {
             responsive: true,
             title: {
                 display: true,
-                text: 'Chart.js Line Chart'
+                text: 'SMS Sentiment'
             },
             tooltips: {
                 mode: 'index',
